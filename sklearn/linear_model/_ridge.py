@@ -1621,9 +1621,9 @@ class _BaseRidgeCV(LinearModel):
                           "'alpha' was {} which lies at a boundary of the "
                           "explored range (between {} and {}). Consider "
                           "setting the 'alphas' parameter to explore a "
-                          "wider range." 
+                          "wider range."
                           .format(self.alpha_, min_alpha,
-                                            max_alpha))            
+                                            max_alpha))
             self.best_score_ = gs.best_score_
 
         self.coef_ = estimator.coef_

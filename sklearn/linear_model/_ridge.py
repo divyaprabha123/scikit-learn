@@ -1618,12 +1618,12 @@ class _BaseRidgeCV(LinearModel):
             max_alpha = max(self.alphas)
             if (self.alpha_ in [min_alpha, max_alpha]):
                 warnings.warn("The optimal value for the regularization parameter "
-                          "'alpha' was {} which lies at a boundary of the "
-                          "explored range (between {} and {}). Consider "
-                          "setting the 'alphas' parameter to explore a "
-                          "wider range."
-                          .format(self.alpha_, min_alpha,
-                          max_alpha))
+                              "'alpha' was {}\nwhich lies at a boundary of the "
+                              "explored range (between {} and {}).\nConsider "
+                              "setting the 'alphas' parameter to explore a "
+                              "wider range."
+                              .format(self.alpha_, min_alpha,
+                              max_alpha))
             self.best_score_ = gs.best_score_
 
         self.coef_ = estimator.coef_

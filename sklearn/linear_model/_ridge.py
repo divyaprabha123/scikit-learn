@@ -22,7 +22,6 @@ from ._sag import sag_solver
 from ..base import RegressorMixin, MultiOutputMixin, is_classifier
 from ..utils.extmath import safe_sparse_dot
 from ..utils.extmath import row_norms
-from ..utils import check_X_y
 from ..utils import check_array
 from ..utils import check_consistent_length
 from ..utils import compute_sample_weight
@@ -537,10 +536,10 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
         _dtype = [np.float64, np.float32]
         _accept_sparse = _get_valid_accept_sparse(sparse.issparse(X),
                                                   self.solver)
-        X, y = check_X_y(X, y,
-                         accept_sparse=_accept_sparse,
-                         dtype=_dtype,
-                         multi_output=True, y_numeric=True)
+        X, y = self._validate_data(X, y,
+                                   accept_sparse=_accept_sparse,
+                                   dtype=_dtype,
+                                   multi_output=True, y_numeric=True)
         if sparse.issparse(X) and self.fit_intercept:
             if self.solver not in ['auto', 'sparse_cg', 'sag']:
                 raise ValueError(
@@ -921,8 +920,8 @@ class RidgeClassifier(LinearClassifierMixin, _BaseRidge):
         """
         _accept_sparse = _get_valid_accept_sparse(sparse.issparse(X),
                                                   self.solver)
-        X, y = check_X_y(X, y, accept_sparse=_accept_sparse, multi_output=True,
-                         y_numeric=False)
+        X, y = self._validate_data(X, y, accept_sparse=_accept_sparse,
+                                   multi_output=True, y_numeric=False)
         sample_weight = _check_sample_weight(sample_weight, X, dtype=X.dtype)
 
         self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
@@ -1450,8 +1449,9 @@ class _RidgeGCV(LinearModel):
         -------
         self : object
         """
-        X, y = check_X_y(X, y, ['csr', 'csc', 'coo'], dtype=[np.float64],
-                         multi_output=True, y_numeric=True)
+        X, y = self._validate_data(X, y, accept_sparse=['csr', 'csc', 'coo'],
+                                   dtype=[np.float64],
+                                   multi_output=True, y_numeric=True)
 
         if sample_weight is not None:
             sample_weight = _check_sample_weight(sample_weight, X,
@@ -1548,8 +1548,8 @@ class _RidgeGCV(LinearModel):
 class _BaseRidgeCV(LinearModel):
     def __init__(self, alphas=(0.1, 1.0, 10.0),
                  fit_intercept=True, normalize=False, scoring=None,
-                 cv=None, gcv_mode=None, store_cv_values=False,
-                 boundary_warning=False):
+                 cv=None, gcv_mode=None,
+                 store_cv_values=False):
         self.alphas = np.asarray(alphas)
         self.fit_intercept = fit_intercept
         self.normalize = normalize
@@ -1557,7 +1557,6 @@ class _BaseRidgeCV(LinearModel):
         self.cv = cv
         self.gcv_mode = gcv_mode
         self.store_cv_values = store_cv_values
-        self.boundary_warning = boundary_warning
 
     def fit(self, X, y, sample_weight=None):
         """Fit Ridge regression model with cv.
@@ -1615,21 +1614,21 @@ class _BaseRidgeCV(LinearModel):
             gs.fit(X, y, sample_weight=sample_weight)
             estimator = gs.best_estimator_
             self.alpha_ = gs.best_estimator_.alpha
+            self.best_score_ = gs.best_score_
             min_alpha = min(self.alphas)
             max_alpha = max(self.alphas)
-            if (self.alpha_ in [min_alpha, max_alpha]) * self.boundary_warning:
-                warnings.warn(
-                    "The optimal value for "
-                    "the regularization parameter 'alpha' was {} "
-                    "which lies at a boundary of the explored range "
-                    "(between {} and {}). Consider setting the 'alphas' "
-                    "parameter to explore a wider range. "
-                    .format(self.alpha_, min_alpha, max_alpha))
-
-            self.best_score_ = gs.best_score_
+            if (self.alpha_ in [min_alpha, max_alpha]):
+                warnings.warn("The optimal value for the regularization parameter "
+                          "'alpha' was %g which lies at a boundary of the "
+                          "explored range (between %g and %g). Consider "
+                          "setting the 'alphas' parameter to explore a "
+                          "wider range." % (self.alpha_, min_alpha,
+                                            max_alpha))
+            
 
         self.coef_ = estimator.coef_
         self.intercept_ = estimator.intercept_
+        self.n_features_in_ = estimator.n_features_in_
 
         return self
 
@@ -1715,10 +1714,11 @@ class RidgeCV(MultiOutputMixin, RegressorMixin, _BaseRidgeCV):
     ----------
     cv_values_ : ndarray of shape (n_samples, n_alphas) or \
         shape (n_samples, n_targets, n_alphas), optional
-        Cross-validation values for each alpha (if ``store_cv_values=True``\
-        and ``cv=None``). After ``fit()`` has been called, this attribute \
-        will contain the mean squared errors (by default) or the values \
-        of the ``{loss,score}_func`` function (if provided in the constructor).
+        Cross-validation values for each alpha (only available if \
+        ``store_cv_values=True`` and ``cv=None``). After ``fit()`` has been \
+        called, this attribute will contain the mean squared errors \
+        (by default) or the values of the ``{loss,score}_func`` function \
+        (if provided in the constructor).
 
     coef_ : ndarray of shape (n_features) or (n_targets, n_features)
         Weight vector(s).
@@ -1894,8 +1894,8 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
         -------
         self : object
         """
-        X, y = check_X_y(X, y, accept_sparse=['csr', 'csc', 'coo'],
-                         multi_output=True, y_numeric=False)
+        X, y = self._validate_data(X, y, accept_sparse=['csr', 'csc', 'coo'],
+                                   multi_output=True, y_numeric=False)
         sample_weight = _check_sample_weight(sample_weight, X, dtype=X.dtype)
 
         self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)

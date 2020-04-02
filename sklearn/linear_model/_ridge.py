@@ -1619,9 +1619,10 @@ class _BaseRidgeCV(LinearModel):
         max_alpha = max(self.alphas)
  
         if self.alpha_ in [min_alpha, max_alpha]:
-            warnings.warn(f"The optimal value for the regularization parameter "
-                          "'alpha' was {self.alpha_}\n which lies at a boundary of the "
-                          "explored range (between {min_alpha} and {max_alpha}).\n Consider "
+            warnings.warn(f"The optimal value for the regularization "
+                          "parameter 'alpha' was {self.alpha_}\n which "
+                          "lies at a boundary of the explored range "
+                          "(between {min_alpha} and {max_alpha}).\n Consider "
                           "setting the 'alphas' parameter to explore a "
                           "wider range.\n To ignore warnings try running "
                           "\nimport warnings "
